@@ -37,7 +37,7 @@ async def on_ready():
             return
 
         if message.content == "!pomo":
-            random_word = r.word(include_parts_of_speech=["adjectives"]) + "-pomo"
+            random_word = r.word(regex="p.*", include_parts_of_speech=["adjectives"]) + "-pomo"
             channel = await message.guild.create_text_channel(random_word)
             await message.channel.send(f"Pomo session started in channel {channel.mention}")
             pomodoro = Pomodoro()
