@@ -38,9 +38,10 @@ async def on_ready():
             channel = await message.guild.create_text_channel("pomo-test")
             pomodoro = Pomodoro()
             pomodoro.start()
-            pomomessage = await channel.send(f"{pomodoro.time_left()}")
-            while pomodoro.active:
-                await pomomessage.edit(content=f"{pomodoro.time_left()}")
+            pomomessage = await message.channel.send(f"{pomodoro.get_pomo_message()}")
+            while (pomodoro.active):
+                pomomessage.update()
+                await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
                 sleep(0.5)
 
         if message.content.startswith("Hej"):
