@@ -13,6 +13,7 @@ client = discord.Client()
 
 pomodoro = None
 
+
 @client.event
 async def on_ready():
     for guild in client.guilds:
@@ -34,7 +35,7 @@ async def on_ready():
             pomodoro = Pomodoro()
             pomodoro.start()
             pomomessage = await message.channel.send(f"{pomodoro.get_pomo_message()}")
-            while (pomodoro.active):
+            while pomodoro.active:
                 pomomessage.update()
                 await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
                 sleep(0.5)
