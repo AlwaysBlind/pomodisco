@@ -1,6 +1,8 @@
 import os
 from dotenv import load_dotenv
 import discord
+from time import sleep
+from pomodoro import Pomodoro
 
 load_dotenv()
 
@@ -9,6 +11,7 @@ GUILD = os.getenv("GUILD")
 
 client = discord.Client()
 
+pomodoro = None
 
 @client.event
 async def on_ready():
@@ -26,6 +29,14 @@ async def on_ready():
     async def on_message(message):
         if message.author == client.user:
             return
+
+        if message.content.startswith("!pomo"):
+            pomodoro = Pomodoro()
+            pomodoro.start()
+            pomomessage = await message.channel.send(f"{pomodoro.time_left()}")
+            while (pomodoro.active):
+                await pomomessage.edit(content=f"{pomodoro.time_left()}")
+                sleep(0.5)
 
         if message.content.startswith("Hej"):
             await message.channel.send("I am pomobot: Hello.")
