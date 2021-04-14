@@ -33,9 +33,10 @@ async def on_ready():
         if message.content.startswith("!pomo"):
             pomodoro = Pomodoro()
             pomodoro.start()
-            pomomessage = await message.channel.send(f"{pomodoro.time_left()}")
+            pomomessage = await message.channel.send(f"{pomodoro.get_pomo_message()}")
             while (pomodoro.active):
-                await pomomessage.edit(content=f"{pomodoro.time_left()}")
+                pomomessage.update()
+                await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
                 sleep(0.5)
 
         if message.content.startswith("Hej"):
