@@ -10,11 +10,12 @@ token = os.getenv("TOKEN")
 GUILD = os.getenv("GUILD")
 
 client = discord.Client()
-
 pomodoro = None
+
 
 @client.event
 async def on_ready():
+    print(client.guilds)
     for guild in client.guilds:
         if guild.name == GUILD:
             break
@@ -31,10 +32,11 @@ async def on_ready():
             return
 
         if message.content.startswith("!pomo"):
+            channel = await message.guild.create_text_channel("pomo-test")
             pomodoro = Pomodoro()
             pomodoro.start()
-            pomomessage = await message.channel.send(f"{pomodoro.time_left()}")
-            while (pomodoro.active):
+            pomomessage = await channel.send(f"{pomodoro.time_left()}")
+            while pomodoro.active:
                 await pomomessage.edit(content=f"{pomodoro.time_left()}")
                 sleep(0.5)
 
