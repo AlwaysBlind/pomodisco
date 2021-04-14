@@ -46,7 +46,7 @@ class Pomodoro:
         Pomo: {self.n_pomos_completed % self.sets_in_a_session + 1}/{self.sets_in_a_session}\n
         Sets completed: {self.n_sets_completed}\n
         Pomo mode: {self.status}\n
-        Time left: {self.time_left}"""
+        Time left: {self._time_left()}"""
         return pomostring
 
     def handle_status(self):
