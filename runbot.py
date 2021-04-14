@@ -11,6 +11,9 @@ GUILD = os.getenv("GUILD")
 
 client = discord.Client()
 pomodoro = None
+pomodoros = {
+    
+}
 
 
 @client.event
