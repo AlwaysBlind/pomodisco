@@ -42,8 +42,7 @@ class Pomodoro:
         self.time_left = time_left
 
     def get_pomo_message(self):
-        pomostring = f"""
-        Pomo: {self.n_pomos_completed % self.sets_in_a_session + 1}/{self.sets_in_a_session}\n
+        pomostring = f"""Pomo: {self.n_pomos_completed % self.sets_in_a_session + 1}/{self.sets_in_a_session}\n
         Sets completed: {self.n_sets_completed}\n
         Pomo mode: {self.status}\n
         Time left: {self.time_left}"""
