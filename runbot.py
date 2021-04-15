@@ -14,9 +14,8 @@ GUILD = os.getenv("GUILD")
 client = discord.Client()
 pomodoro = None
 
-pomodoros = {
-    
-}
+pomodoros = {}
+
 
 @client.event
 async def on_ready():
@@ -37,17 +36,37 @@ async def on_ready():
             return
 
         if message.content == "!pomo":
-            random_word = r.word(regex="p.*", include_parts_of_speech=["adjectives"]) + "-pomo"
-            channel = await message.guild.create_text_channel(random_word)
-            await message.channel.send(f"Pomo session started in channel {channel.mention}")
+            random_word = (
+                r.word(regex="p.*", include_parts_of_speech=["adjectives"]) + "-pomo"
+            )
+            channel = await create_text_channel_with_permissions(message, random_word)
+            await message.channel.send(
+                f"Pomo session started in channel {channel.mention}"
+            )
             pomodoro = Pomodoro()
             pomodoros[random_word] = pomodoro
             pomodoro.start()
 
             pomomessage = await channel.send(f"{pomodoro.get_pomo_message()}")
-            while (pomodoro.active):
+            while pomodoro.active:
                 pomodoro.update()
                 await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
                 sleep(1)
+
+
+async def create_text_channel_with_permissions(message, name):
+    all_except = discord.Permissions.all()
+    all_except.read_messages,all_except.read_message_history  = False, False
+    permissions = discord.PermissionOverwrite.from_pair(
+        discord.Permissions(read_messages=True, read_message_history=True), all_except
+    )
+    overwrites = {
+        message.guild.default_role: permissions,
+        message.guild.me: discord.PermissionOverwrite.from_pair(
+            discord.Permissions.all(), discord.Permissions.none()
+        ),
+    }
+    return await message.guild.create_text_channel(name=name, overwrites=overwrites)
+
 
 client.run(token)
