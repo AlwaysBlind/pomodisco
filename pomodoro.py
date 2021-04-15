@@ -23,6 +23,7 @@ class Pomodoro:
         self.active = True
         self.n_pomos_completed = 0
         self.n_sets_completed = 0
+        self.time_left = 0
 
     def start(self):
         self.stopwatch.start()

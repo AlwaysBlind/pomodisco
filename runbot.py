@@ -44,7 +44,11 @@ async def on_ready():
             pomodoros[random_word] = pomodoro
             pomodoro.start()
 
+            reactions = ["\u25B6", "\u23F8", "\u23E9"]
             pomomessage = await channel.send(f"{pomodoro.get_pomo_message()}")
+            for reaction in reactions:
+                await pomomessage.add_reaction(reaction);
+            
             while (pomodoro.active):
                 pomodoro.update()
                 await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
