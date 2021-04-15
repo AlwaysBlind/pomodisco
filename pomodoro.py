@@ -20,6 +20,7 @@ class Pomodoro:
 
     def __init__(self):
         self.change_status(PomoStatus.POMOTIME)
+        self.update()
         self.active = True
         self.n_pomos_completed = 0
         self.n_sets_completed = 0
