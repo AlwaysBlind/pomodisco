@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import discord
 from wonderwords import RandomWord
 from time import sleep
-from pomodoro import Pomodoro
+from pomodoro import Pomodoro, PomoStatus
 
 load_dotenv()
 r = RandomWord()
@@ -31,6 +31,12 @@ async def on_ready():
         f"Pomoooooooo"
     )
 
+    async def run_pomo(pomodoro, pomomessage):
+        while(pomodoro.active):
+            pomodoro.update()
+            await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
+            sleep(1)
+
     @client.event
     async def on_message(message):
         if message.author == client.user:
@@ -44,14 +50,27 @@ async def on_ready():
             pomodoros[random_word] = pomodoro
             pomodoro.start()
 
-            reactions = ["\u25B6", "\u23F8", "\u23E9"]
+            reactions = ['▶', "⏸" , "⏩"]
             pomomessage = await channel.send(f"{pomodoro.get_pomo_message()}")
             for reaction in reactions:
                 await pomomessage.add_reaction(reaction);
-            
-            while (pomodoro.active):
-                pomodoro.update()
-                await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
-                sleep(1)
+
+            await run_pomo(pomodoro, pomomessage)
+
+    @client.event
+    async def on_reaction_add(reaction, user):
+        
+        if user == reaction.message.author:
+            return
+        channel_name = reaction.message.channel.name
+        if channel_name in pomodoros:
+            await reaction.remove(user)
+            if reaction.emoji == '▶':
+                pomodoros[channel_name].start()
+                await run_pomo(pomodoros[channel_name], reaction.message)
+            elif reaction.emoji == '⏸':
+                pomodoros[channel_name].stop()
+            elif reaction.emoji == '⏩' and pomodoros[channel_name].status in {PomoStatus.BREAK, PomoStatus.LONGBREAK}:  
+                pomodoros[channel_name].handle_status()       
 
 client.run(token)

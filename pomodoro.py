@@ -7,9 +7,9 @@ from stopwatch import Stopwatch
 
 @unique
 class PomoStatus(Enum):
-    BREAK = (timedelta(seconds=3), 1)
-    POMOTIME = (timedelta(seconds=3), 2)
-    LONGBREAK = (timedelta(seconds=3), 3)
+    BREAK = (timedelta(seconds=20), 1)
+    POMOTIME = (timedelta(seconds=10), 2)
+    LONGBREAK = (timedelta(seconds=30), 3)
 
     def __init__(self, session_length, _):
         self.SESSION_LENGTH = session_length
@@ -24,13 +24,14 @@ class Pomodoro:
         self.active = True
         self.n_pomos_completed = 0
         self.n_sets_completed = 0
-        self.time_left = 0
 
     def start(self):
         self.stopwatch.start()
+        self.active = True
 
     def stop(self):
         self.stopwatch.stop()
+        self.active = False
 
     def get_time_left(self):
         return self.session_length - timedelta(seconds=round(self.stopwatch.duration))
