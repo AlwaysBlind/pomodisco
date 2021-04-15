@@ -14,9 +14,8 @@ GUILD = os.getenv("GUILD")
 client = discord.Client()
 pomodoro = None
 
-pomodoros = {
-    
-}
+pomodoros = {}
+
 
 @client.event
 async def on_ready():
@@ -32,7 +31,7 @@ async def on_ready():
     )
 
     async def run_pomo(pomodoro, pomomessage):
-        while(pomodoro.active):
+        while pomodoro.active:
             pomodoro.update()
             await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
             sleep(1)
@@ -43,34 +42,42 @@ async def on_ready():
             return
 
         if message.content == "!pomo":
-            random_word = r.word(regex="p.*", include_parts_of_speech=["adjectives"]) + "-pomo"
+            random_word = (
+                r.word(regex="p.*", include_parts_of_speech=["adjectives"]) + "-pomo"
+            )
             channel = await message.guild.create_text_channel(random_word)
-            await message.channel.send(f"Pomo session started in channel {channel.mention}")
+            await message.channel.send(
+                f"Pomo session started in channel {channel.mention}"
+            )
             pomodoro = Pomodoro()
             pomodoros[random_word] = pomodoro
             pomodoro.start()
 
-            reactions = ['▶', "⏸" , "⏩"]
+            reactions = ["▶", "⏸", "⏩"]
             pomomessage = await channel.send(f"{pomodoro.get_pomo_message()}")
             for reaction in reactions:
-                await pomomessage.add_reaction(reaction);
+                await pomomessage.add_reaction(reaction)
 
             await run_pomo(pomodoro, pomomessage)
 
     @client.event
     async def on_reaction_add(reaction, user):
-        
+
         if user == reaction.message.author:
             return
         channel_name = reaction.message.channel.name
         if channel_name in pomodoros:
             await reaction.remove(user)
-            if reaction.emoji == '▶':
+            if reaction.emoji == "▶":
                 pomodoros[channel_name].start()
                 await run_pomo(pomodoros[channel_name], reaction.message)
-            elif reaction.emoji == '⏸':
+            elif reaction.emoji == "⏸":
                 pomodoros[channel_name].stop()
-            elif reaction.emoji == '⏩' and pomodoros[channel_name].status in {PomoStatus.BREAK, PomoStatus.LONGBREAK}:  
-                pomodoros[channel_name].handle_status()       
+            elif reaction.emoji == "⏩" and pomodoros[channel_name].status in {
+                PomoStatus.BREAK,
+                PomoStatus.LONGBREAK,
+            }:
+                pomodoros[channel_name].handle_status()
+
 
 client.run(token)
