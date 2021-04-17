@@ -21,17 +21,20 @@ class Pomodoro:
     def __init__(self):
         self.change_status(PomoStatus.POMOTIME)
         self.update()
-        self.active = True
         self.n_pomos_completed = 0
         self.n_sets_completed = 0
 
     def start(self):
         self.stopwatch.start()
-        self.active = True
+        self.inactive_stopwatch = Stopwatch()
+        self.inactive_stopwatch.stop()
+
+    def get_inactive_time(self):
+        return timedelta(seconds=self.inactive_stopwatch.duration)
 
     def stop(self):
         self.stopwatch.stop()
-        self.active = False
+        self.inactive_stopwatch = Stopwatch()
 
     def get_time_left(self):
         return self.session_length - timedelta(seconds=round(self.stopwatch.duration))
@@ -65,13 +68,14 @@ Time left: {self.time_left}```"""
 
     def change_status(self, status):
         self.stopwatch = Stopwatch()
+        self.stop()
         self.status = status
         self.session_length = status.SESSION_LENGTH
 
 
 if __name__ == "__main__":
     p = Pomodoro()
-    # p.start()
+    p.start()
     print(PomoStatus.BREAK is PomoStatus.LONGBREAK)
     print(PomoStatus.BREAK.SESSION_LENGTH)
     sw = Stopwatch()
@@ -80,3 +84,4 @@ if __name__ == "__main__":
         sleep(1)
         p.update()
         print(p.get_pomo_message())
+        print(p.get_inactive_time())

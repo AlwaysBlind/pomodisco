@@ -4,6 +4,7 @@ import discord
 from wonderwords import RandomWord
 from time import sleep
 from pomodoro import Pomodoro, PomoStatus
+from datetime import timedelta
 
 load_dotenv()
 r = RandomWord()
@@ -15,7 +16,7 @@ client = discord.Client()
 pomodoro = None
 
 pomodoros = {}
-
+MAX_INACTIVE_TIME = timedelta(hours=2)
 
 @client.event
 async def on_ready():
@@ -31,10 +32,11 @@ async def on_ready():
     )
 
     async def run_pomo(pomodoro, pomomessage):
-        while pomodoro.active:
+        while pomodoro.get_inactive_time() < MAX_INACTIVE_TIME:
             pomodoro.update()
             await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
             sleep(1)
+        print("Bot is inactive")
 
     @client.event
     async def on_message(message):
