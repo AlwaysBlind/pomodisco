@@ -14,7 +14,6 @@ token = os.getenv("TOKEN")
 GUILD = os.getenv("GUILD")
 
 client = discord.Client()
-pomodoro = None
 
 pomodoros = {}
 
@@ -36,8 +35,10 @@ async def on_ready():
     )
 
     async def notify_subscribers(subscribers, message):
-        for sub in subscribers:
-            await sub.send(message)
+        for user in subscribers:
+            print(user)
+            print('should send to user')
+            asyncio.create_task(user.send(message))
 
 
     async def run_pomo(pomodoro, pomomessage):
@@ -46,17 +47,19 @@ async def on_ready():
             if status == UpdateStatus.StatusChange:
                 # Om pomo är break och det är 30 sek kvar skicka ut meddelande till alla som är subscribed till den pomon
                 try:
-                    await notify_subscribers(pomodoro.Subscribers, "Times up!")
+                    asyncio.create_task(notify_subscribers(pomodoro.subscribers, "Times up!"))
                 except discord.errors.NotFound as e:
                     print(e, "Channel does not exist anymore")
-                    break
+                    return
             try:
                 await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
             except discord.errors.NotFound as e:
                 print(e, "Channel does not exist anymore")
-                break
+                return
 
             sleep(1)
+        remove_pomo(pomomessage.channel.id, pomodoro.announcement_message_id)
+        await pomomessage.channel.delete()
         print("Bot is inactive")
 
     @client.event
@@ -90,6 +93,7 @@ async def on_ready():
             )
             await pomo_announcement.add_reaction("🔔")
             await pomo_announcement.add_reaction("🔕")
+            pomodoro.announcement_message_id = pomo_announcement.id
 
             subscriptions[pomo_announcement.id] = pomodoro
 
@@ -113,13 +117,17 @@ async def on_ready():
                 PomoStatus.LONGBREAK,
             }:
                 pomodoros[channel_id].handle_status()
-            await reaction.remove(user)
+            asyncio.create_task(reaction.remove(user))
 
         ##Reactions to subscribe
         if reaction.message.id in subscriptions:
-            await reaction.remove(user)
+            asyncio.create_task(reaction.remove(user))
             if reaction.emoji == "🔔":
-                subscriptions[reaction.message.id].subscribe_list.add(user.id)
+                subscriptions[reaction.message.id].subscribers.add(user)
+            if reaction.emoji == "🔕":
+                subscriptions[reaction.message.id].subscribers.discard(user)
+
+
 
         # Reagera på meddelandet för att subscriba
         # Se till att det är rrätt meddelande genom message id.
@@ -128,9 +136,12 @@ async def on_ready():
     @client.event
     async def on_guild_channel_delete(channel):
         if channel.id in pomodoros:
-            pomodoros[channel.id].stop()
-            pomodoros.pop(channel.name)
-            print(pomodoros)
+            pomo = pomodoros[channel.id]
+            remove_pomo(channel.id, pomo.announcement_message_id)
+
+    def remove_pomo(channel_id, pomo_announcement_id):
+        pomodoros.pop(channel_id)
+        subscriptions.pop(pomo_announcement_id)
 
 
 async def create_text_channel_with_permissions(message, name):
