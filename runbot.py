@@ -3,7 +3,8 @@ from dotenv import load_dotenv
 import discord
 from wonderwords import RandomWord
 from time import sleep
-from pomodoro import Pomodoro, PomoStatus
+from pomodoro import Pomodoro, PomoStatus, UpdateStatus
+from datetime import timedelta
 
 load_dotenv()
 r = RandomWord()
@@ -18,6 +19,7 @@ pomodoros = {}
 
 subscriptions = {}
 
+MAX_INACTIVE_TIME = timedelta(hours=2)
 
 @client.event
 async def on_ready():
@@ -32,17 +34,29 @@ async def on_ready():
         f"Pomoooooooo"
     )
 
-    async def run_pomo(pomodoro, pomomessage):
-        while pomodoro.active:
-            pomodoro.update()
-            # Om pomo är break och det är 30 sek kvar skicka ut meddelande till alla som är subscribed till den pomon
+    async def notify_subscribers(subscribers, message):
+        for sub in subscribers:
+            await sub.send(message)
 
+
+    async def run_pomo(pomodoro, pomomessage):
+        while pomodoro.get_inactive_time() < MAX_INACTIVE_TIME:
+            status = pomodoro.update()
+            if status == UpdateStatus.StatusChange:
+                # Om pomo är break och det är 30 sek kvar skicka ut meddelande till alla som är subscribed till den pomon
+                try:
+                    await notify_subscribers(pomodoro.Subscribers, "Times up!")
+                except discord.errors.NotFound as e:
+                    print(e, "Channel does not exist anymore")
+                    break
             try:
                 await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
             except discord.errors.NotFound as e:
                 print(e, "Channel does not exist anymore")
                 break
+
             sleep(1)
+        print("Bot is inactive")
 
     @client.event
     async def on_message(message):
