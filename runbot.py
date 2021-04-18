@@ -5,6 +5,7 @@ from wonderwords import RandomWord
 from time import sleep
 from pomodoro import Pomodoro, PomoStatus, UpdateStatus
 from datetime import timedelta
+import asyncio
 
 load_dotenv()
 r = RandomWord()
@@ -63,6 +64,11 @@ async def on_ready():
         if message.author == client.user:
             return
 
+        if message.content.startswith("!del"):
+            for channel in message.guild.channels:
+                if channel.name != "asd":
+                    await channel.delete()
+
         if message.content == "!pomo":
 
             ##Create channel and pomo session.
@@ -72,7 +78,6 @@ async def on_ready():
             channel = await create_text_channel_with_permissions(message, random_word)
             pomodoro = Pomodoro()
             pomodoros[channel.id] = pomodoro
-            pomodoro.start()
 
             reactions = ["▶", "⏸", "⏩"]
             pomomessage = await channel.send(f"{pomodoro.get_pomo_message()}")
@@ -89,20 +94,18 @@ async def on_ready():
             subscriptions[pomo_announcement.id] = pomodoro
 
             ##Initiate pomo
-            await run_pomo(pomodoro, pomomessage)
+            asyncio.create_task(run_pomo(pomodoro, pomomessage))
 
     @client.event
     async def on_reaction_add(reaction, user):
 
         ##Reactions for pomo session
-        if user == reaction.message.author:
+        if user == client.user:
             return
         channel_id = reaction.message.channel.id
         if channel_id in pomodoros:
-            await reaction.remove(user)
             if reaction.emoji == "▶":
                 pomodoros[channel_id].start()
-                await run_pomo(pomodoros[channel_id], reaction.message)
             elif reaction.emoji == "⏸":
                 pomodoros[channel_id].stop()
             elif reaction.emoji == "⏩" and pomodoros[channel_id].status in {
@@ -110,6 +113,7 @@ async def on_ready():
                 PomoStatus.LONGBREAK,
             }:
                 pomodoros[channel_id].handle_status()
+            await reaction.remove(user)
 
         ##Reactions to subscribe
         if reaction.message.id in subscriptions:

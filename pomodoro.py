@@ -47,8 +47,7 @@ class Pomodoro:
     def get_time_left(self):
         return self.session_length - timedelta(seconds=round(self.stopwatch.duration))
 
-    async def update(self):
-        
+    def update(self):
         time_left = self.get_time_left()
         if time_left < timedelta(0):
             self.handle_status()
