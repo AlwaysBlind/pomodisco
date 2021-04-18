@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 import discord
 from wonderwords import RandomWord
 from time import sleep
-from pomodoro import Pomodoro, PomoStatus
+from pomodoro import Pomodoro, PomoStatus, UpdateStatus
 from datetime import timedelta
 
 load_dotenv()
@@ -31,9 +31,18 @@ async def on_ready():
         f"Pomoooooooo"
     )
 
+    async def notify_subscribers(subscribers, message):
+        for sub in subscribers:
+            await sub.send(message)
+
+
+
     async def run_pomo(pomodoro, pomomessage):
         while pomodoro.get_inactive_time() < MAX_INACTIVE_TIME:
-            pomodoro.update()
+            status = pomodoro.update()
+            if status == UpdateStatus.StatusChange:
+                await notify_subscribers(pomodoro.Subscribers, "Times up!")
+
             await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
             sleep(1)
         print("Bot is inactive")

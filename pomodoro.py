@@ -4,6 +4,7 @@ from time import sleep
 
 from stopwatch import Stopwatch
 
+STOPPED = "==STOPPED=="
 
 @unique
 class PomoStatus(Enum):
@@ -14,6 +15,9 @@ class PomoStatus(Enum):
     def __init__(self, session_length, _):
         self.SESSION_LENGTH = session_length
 
+class UpdateStatus(Enum):
+    Nothing = 0
+    StatusChange = 1
 
 class Pomodoro:
     sets_in_a_session = 4
@@ -23,11 +27,14 @@ class Pomodoro:
         self.update()
         self.n_pomos_completed = 0
         self.n_sets_completed = 0
+        self.active = False
+        self.subscribers = set()
 
     def start(self):
         self.stopwatch.start()
         self.inactive_stopwatch = Stopwatch()
         self.inactive_stopwatch.stop()
+        self.active = True
 
     def get_inactive_time(self):
         return timedelta(seconds=self.inactive_stopwatch.duration)
@@ -35,11 +42,13 @@ class Pomodoro:
     def stop(self):
         self.stopwatch.stop()
         self.inactive_stopwatch = Stopwatch()
+        self.active = False
 
     def get_time_left(self):
         return self.session_length - timedelta(seconds=round(self.stopwatch.duration))
 
-    def update(self):
+    async def update(self):
+        
         time_left = self.get_time_left()
         if time_left < timedelta(0):
             self.handle_status()
@@ -52,7 +61,7 @@ class Pomodoro:
 Pomo: {self.n_pomos_completed % self.sets_in_a_session + 1}/{self.sets_in_a_session}{invisible_string}\n
 Sets completed: {self.n_sets_completed}\n
 Pomo mode: {self.status}\n
-Time left: {self.time_left}```"""
+Time left: {self.time_left} {"" if self.active else STOPPED }```"""
         return pomostring
 
     def handle_status(self):
