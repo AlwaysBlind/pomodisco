@@ -47,13 +47,15 @@ class Pomodoro:
     def get_time_left(self):
         return self.session_length - timedelta(seconds=round(self.stopwatch.duration))
 
-    async def update(self):
-        
+    def update(self):
+        status = UpdateStatus.Nothing
         time_left = self.get_time_left()
         if time_left < timedelta(0):
             self.handle_status()
+            status = UpdateStatus.StatusChange
             time_left = self.get_time_left()
         self.time_left = time_left
+        return status
 
     def get_pomo_message(self):
         invisible_string = "                       \u2062"

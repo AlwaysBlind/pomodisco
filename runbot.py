@@ -5,6 +5,7 @@ from wonderwords import RandomWord
 from time import sleep
 from pomodoro import Pomodoro, PomoStatus, UpdateStatus
 from datetime import timedelta
+import asyncio
 
 load_dotenv()
 r = RandomWord()
@@ -13,9 +14,11 @@ token = os.getenv("TOKEN")
 GUILD = os.getenv("GUILD")
 
 client = discord.Client()
-pomodoro = None
 
 pomodoros = {}
+
+subscriptions = {}
+
 MAX_INACTIVE_TIME = timedelta(hours=2)
 
 @client.event
@@ -32,19 +35,31 @@ async def on_ready():
     )
 
     async def notify_subscribers(subscribers, message):
-        for sub in subscribers:
-            await sub.send(message)
-
+        for user in subscribers:
+            print(user)
+            print('should send to user')
+            asyncio.create_task(user.send(message))
 
 
     async def run_pomo(pomodoro, pomomessage):
         while pomodoro.get_inactive_time() < MAX_INACTIVE_TIME:
             status = pomodoro.update()
             if status == UpdateStatus.StatusChange:
-                await notify_subscribers(pomodoro.Subscribers, "Times up!")
+                # Om pomo är break och det är 30 sek kvar skicka ut meddelande till alla som är subscribed till den pomon
+                try:
+                    asyncio.create_task(notify_subscribers(pomodoro.subscribers, "Times up!"))
+                except discord.errors.NotFound as e:
+                    print(e, "Channel does not exist anymore")
+                    return
+            try:
+                await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
+            except discord.errors.NotFound as e:
+                print(e, "Channel does not exist anymore")
+                return
 
-            await pomomessage.edit(content=f"{pomodoro.get_pomo_message()}")
             sleep(1)
+        remove_pomo(pomomessage.channel.id, pomodoro.announcement_message_id)
+        await pomomessage.channel.delete()
         print("Bot is inactive")
 
     @client.event
@@ -52,43 +67,81 @@ async def on_ready():
         if message.author == client.user:
             return
 
+        if message.content.startswith("!del"):
+            for channel in message.guild.channels:
+                if channel.name != "asd":
+                    await channel.delete()
+
         if message.content == "!pomo":
+
+            ##Create channel and pomo session.
             random_word = (
                 r.word(regex="p.*", include_parts_of_speech=["adjectives"]) + "-pomo"
             )
             channel = await create_text_channel_with_permissions(message, random_word)
-            await message.channel.send(
-                f"Pomo session started in channel {channel.mention}"
-            )
             pomodoro = Pomodoro()
-            pomodoros[random_word] = pomodoro
-            pomodoro.start()
+            pomodoros[channel.id] = pomodoro
 
             reactions = ["▶", "⏸", "⏩"]
             pomomessage = await channel.send(f"{pomodoro.get_pomo_message()}")
             for reaction in reactions:
                 await pomomessage.add_reaction(reaction)
 
-            await run_pomo(pomodoro, pomomessage)
+            ##Create pomo announcement
+            pomo_announcement = await message.channel.send(
+                f"Pomo session started in channel {channel.mention}. Smash the bell below to subscribe to the pomo session."
+            )
+            await pomo_announcement.add_reaction("🔔")
+            await pomo_announcement.add_reaction("🔕")
+            pomodoro.announcement_message_id = pomo_announcement.id
+
+            subscriptions[pomo_announcement.id] = pomodoro
+
+            ##Initiate pomo
+            asyncio.create_task(run_pomo(pomodoro, pomomessage))
 
     @client.event
     async def on_reaction_add(reaction, user):
 
-        if user == reaction.message.author:
+        ##Reactions for pomo session
+        if user == client.user:
             return
-        channel_name = reaction.message.channel.name
-        if channel_name in pomodoros:
-            await reaction.remove(user)
+        channel_id = reaction.message.channel.id
+        if channel_id in pomodoros:
             if reaction.emoji == "▶":
-                pomodoros[channel_name].start()
-                await run_pomo(pomodoros[channel_name], reaction.message)
+                pomodoros[channel_id].start()
             elif reaction.emoji == "⏸":
-                pomodoros[channel_name].stop()
-            elif reaction.emoji == "⏩" and pomodoros[channel_name].status in {
+                pomodoros[channel_id].stop()
+            elif reaction.emoji == "⏩" and pomodoros[channel_id].status in {
                 PomoStatus.BREAK,
                 PomoStatus.LONGBREAK,
             }:
-                pomodoros[channel_name].handle_status()
+                pomodoros[channel_id].handle_status()
+            asyncio.create_task(reaction.remove(user))
+
+        ##Reactions to subscribe
+        if reaction.message.id in subscriptions:
+            asyncio.create_task(reaction.remove(user))
+            if reaction.emoji == "🔔":
+                subscriptions[reaction.message.id].subscribers.add(user)
+            if reaction.emoji == "🔕":
+                subscriptions[reaction.message.id].subscribers.discard(user)
+
+
+
+        # Reagera på meddelandet för att subscriba
+        # Se till att det är rrätt meddelande genom message id.
+        # channelID istället för namn
+
+    @client.event
+    async def on_guild_channel_delete(channel):
+        if channel.id in pomodoros:
+            pomo = pomodoros[channel.id]
+            remove_pomo(channel.id, pomo.announcement_message_id)
+
+    def remove_pomo(channel_id, pomo_announcement_id):
+        pomodoros.pop(channel_id)
+        subscriptions.pop(pomo_announcement_id)
 
 
 async def create_text_channel_with_permissions(message, name):
