@@ -2,10 +2,10 @@ import os
 from dotenv import load_dotenv
 import discord
 from wonderwords import RandomWord
-from time import sleep
 from pomodoro import Pomodoro, PomoStatus, UpdateStatus
 from datetime import timedelta
 import asyncio
+from asyncio import sleep
 
 load_dotenv()
 r = RandomWord()
@@ -21,6 +21,7 @@ subscriptions = {}
 
 MAX_INACTIVE_TIME = timedelta(hours=2)
 
+
 @client.event
 async def on_ready():
     print(client.guilds)
@@ -34,12 +35,12 @@ async def on_ready():
         f"Pomoooooooo"
     )
 
-    async def notify_subscribers(subscribers, message):
-        for user in subscribers:
-            print(user)
-            print('should send to user')
-            asyncio.create_task(user.send(message))
-
+    async def notify_subscribers(subscribers, channel):
+        message = " ".join([f"{user.mention}" for user in subscribers])
+        if message:
+            mention_msg = await channel.send(message)
+            await sleep(7)
+            asyncio.create_task(mention_msg.delete())
 
     async def run_pomo(pomodoro, pomomessage):
         while pomodoro.get_inactive_time() < MAX_INACTIVE_TIME:
@@ -47,7 +48,9 @@ async def on_ready():
             if status == UpdateStatus.StatusChange:
                 # Om pomo är break och det är 30 sek kvar skicka ut meddelande till alla som är subscribed till den pomon
                 try:
-                    asyncio.create_task(notify_subscribers(pomodoro.subscribers, "Times up!"))
+                    asyncio.create_task(
+                        notify_subscribers(pomodoro.subscribers, pomomessage.channel)
+                    )
                 except discord.errors.NotFound as e:
                     print(e, "Channel does not exist anymore")
                     return
@@ -57,7 +60,7 @@ async def on_ready():
                 print(e, "Channel does not exist anymore")
                 return
 
-            sleep(1)
+            await sleep(1)
         remove_pomo(pomomessage.channel.id, pomodoro.announcement_message_id)
         await pomomessage.channel.delete()
         print("Bot is inactive")
@@ -126,8 +129,6 @@ async def on_ready():
                 subscriptions[reaction.message.id].subscribers.add(user)
             if reaction.emoji == "🔕":
                 subscriptions[reaction.message.id].subscribers.discard(user)
-
-
 
         # Reagera på meddelandet för att subscriba
         # Se till att det är rrätt meddelande genom message id.
