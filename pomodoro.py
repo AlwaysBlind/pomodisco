@@ -6,18 +6,21 @@ from stopwatch import Stopwatch
 
 STOPPED = "==STOPPED=="
 
+
 @unique
 class PomoStatus(Enum):
-    BREAK = (timedelta(seconds=20), 1)
-    POMOTIME = (timedelta(seconds=10), 2)
-    LONGBREAK = (timedelta(seconds=30), 3)
+    BREAK = (timedelta(minutes=5), 1)
+    POMOTIME = (timedelta(minutes=25), 2)
+    LONGBREAK = (timedelta(minutes=25), 3)
 
     def __init__(self, session_length, _):
         self.SESSION_LENGTH = session_length
 
+
 class UpdateStatus(Enum):
     Nothing = 0
     StatusChange = 1
+
 
 class Pomodoro:
     sets_in_a_session = 4
