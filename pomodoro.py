@@ -91,6 +91,10 @@ Time left: {self.time_left} {"" if self.active else STOPPED }```"""
     @classmethod
     def get_heavy_pomo(cls):
         return cls(short_length=timedelta(minutes=8), long_length=timedelta(minutes=20),pomo_length=timedelta(minutes=50), sets_in_a_session=3)
+
+    @classmethod
+    def get_debug_pomo(cls):
+        return cls(short_length=timedelta(seconds=5), long_length=timedelta(seconds=5),pomo_length=timedelta(seconds=5), sets_in_a_session=4)
         
 
 
