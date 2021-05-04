@@ -75,14 +75,17 @@ async def on_ready():
                 if channel.name != "asd":
                     await channel.delete()
 
-        if message.content == "!pomo":
+        if message.content.startswith("!pomo"):
 
             ##Create channel and pomo session.
             random_word = (
                 r.word(regex="p.*", include_parts_of_speech=["adjectives"]) + "-pomo"
             )
             channel = await create_text_channel_with_permissions(message, random_word)
-            pomodoro = Pomodoro()
+            if message.content.startswith("!pomo heavy"):
+                pomodoro = Pomodoro.get_heavy_pomo()
+            else:
+                pomodoro = Pomodoro()
             pomodoros[channel.id] = pomodoro
 
             reactions = ["▶", "⏸", "⏩"]

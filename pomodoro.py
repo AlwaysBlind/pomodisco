@@ -9,12 +9,9 @@ STOPPED = "==STOPPED=="
 
 @unique
 class PomoStatus(Enum):
-    BREAK = (timedelta(minutes=5), 1)
-    POMOTIME = (timedelta(minutes=25), 2)
-    LONGBREAK = (timedelta(minutes=25), 3)
-
-    def __init__(self, session_length, _):
-        self.SESSION_LENGTH = session_length
+    BREAK = 3
+    POMOTIME = 2
+    LONGBREAK = 1
 
 
 class UpdateStatus(Enum):
@@ -23,15 +20,19 @@ class UpdateStatus(Enum):
 
 
 class Pomodoro:
-    sets_in_a_session = 4
+    status_states = dict()
 
-    def __init__(self):
+    def __init__(self, break_length=timedelta(minutes=5), pomo_length=timedelta(minutes=25),long_break=timedelta(minutes=25),sets_in_a_session=4):
+        self.status_states[PomoStatus.BREAK]= break_length
+        self.status_states[PomoStatus.POMOTIME]= pomo_length
+        self.status_states[PomoStatus.LONGBREAK]= long_break
         self.change_status(PomoStatus.POMOTIME)
         self.update()
         self.n_pomos_completed = 0
         self.n_sets_completed = 0
         self.active = False
         self.subscribers = set()
+        self.sets_in_a_session = sets_in_a_session
 
     def start(self):
         self.stopwatch.start()
@@ -48,7 +49,9 @@ class Pomodoro:
         self.active = False
 
     def get_time_left(self):
-        return self.session_length - timedelta(seconds=round(self.stopwatch.duration))
+        return self.session_length() - timedelta(seconds=round(self.stopwatch.duration))
+    def session_length(self):
+        return self.status_states[self.status]
 
     def update(self):
         status = UpdateStatus.Nothing
@@ -84,14 +87,18 @@ Time left: {self.time_left} {"" if self.active else STOPPED }```"""
         self.stopwatch = Stopwatch()
         self.stop()
         self.status = status
-        self.session_length = status.SESSION_LENGTH
+
+    @classmethod
+    def get_heavy_pomo(cls):
+        return cls(short_length=timedelta(minutes=8), long_length=timedelta(minutes=20),pomo_length=timedelta(minutes=50), sets_in_a_session=3)
+        
 
 
 if __name__ == "__main__":
     p = Pomodoro()
     p.start()
     print(PomoStatus.BREAK is PomoStatus.LONGBREAK)
-    print(PomoStatus.BREAK.SESSION_LENGTH)
+    print(p.session_length())
     sw = Stopwatch()
     sw.start()
     while sw.duration < 60:

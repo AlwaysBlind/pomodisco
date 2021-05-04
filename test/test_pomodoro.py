@@ -16,7 +16,7 @@ class TestPomodoroMethods(unittest.TestCase):
     def assert_status(self, status):
         p = Pomodoro()
         p.change_status(status)
-        self.assertEqual(p.get_time_left(), status.SESSION_LENGTH)
+        self.assertEqual(p.get_time_left(), p.session_length())
 
     def test_inactive_time(self):
         p = Pomodoro()
